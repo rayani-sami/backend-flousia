@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FloucIA Admin Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #060F1E;
+      --surface:   #0D1B2E;
+      --surface2:  #112240;
+      --border:    #1E2D42;
+      --accent:    #00D4AA;
+      --accent2:   #00A884;
+      --text1:     #E8F4F8;
+      --text2:     #7B9BB4;
+      --text3:     #3D5A73;
+      --success:   #22C55E;
+      --error:     #EF4444;
+      --warning:   #F59E0B;
+      --info:      #3B82F6;
+      --purple:    #8B5CF6;
+      --sidebar-w: 240px;
+    }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text1); overflow-x: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0;
+      width: var(--sidebar-w); background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px; display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; color: #060F1E;
+    }
+    .logo-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo-text span { color: var(--accent); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section { font-size: 10px; color: var(--text3); font-weight: 600;
+      letter-spacing: 0.8px; text-transform: uppercase; padding: 12px 8px 6px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      color: var(--text2); font-size: 13px; font-weight: 500;
+      transition: all .15s; margin-bottom: 2px; text-decoration: none;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text1); }
+    .nav-item.active { background: rgba(0,212,170,.12); color: var(--accent); }
+    .nav-item .material-icons-round { font-size: 18px; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .admin-badge {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      background: var(--surface2); border-radius: 10px;
+    }
+    .admin-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #060F1E;
+    }
+    .admin-info { flex: 1; }
+    .admin-name { font-size: 12px; font-weight: 600; color: var(--text1); }
+    .admin-role { font-size: 10px; color: var(--text2); }
+
+    /* ── MAIN ── */
+    .main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      height: 64px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+    }
+    .topbar-left { display: flex; flex-direction: column; }
+    .page-title { font-size: 18px; font-weight: 700; }
+    .page-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 14px; width: 240px;
+    }
+    .search-box input { background: none; border: none; outline: none;
+      color: var(--text1); font-size: 13px; flex: 1; }
+    .search-box .material-icons-round { font-size: 16px; color: var(--text2); }
+    .icon-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text2); transition: .15s;
+    }
+    .icon-btn:hover { color: var(--text1); border-color: var(--accent); }
+    .icon-btn .material-icons-round { font-size: 18px; }
+
+    /* ── PAGE CONTENT ── */
+    .page-content { flex: 1; padding: 28px; display: none; }
+    .page-content.active { display: block; }
+
+    /* ── STAT CARDS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.teal::before  { background: var(--accent); }
+    .stat-card.blue::before  { background: var(--info); }
+    .stat-card.green::before { background: var(--success); }
+    .stat-card.purple::before{ background: var(--purple); }
+    .stat-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+    .stat-value { font-size: 28px; font-weight: 800; margin: 8px 0 4px; letter-spacing: -0.5px; }
+    .stat-delta { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+    .stat-delta.up { color: var(--success); }
+    .stat-delta.down { color: var(--error); }
+    .stat-icon {
+      position: absolute; right: 16px; top: 20px;
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .stat-card.teal .stat-icon   { background: rgba(0,212,170,.1); color: var(--accent); }
+    .stat-card.blue .stat-icon   { background: rgba(59,130,246,.1); color: var(--info); }
+    .stat-card.green .stat-icon  { background: rgba(34,197,94,.1);  color: var(--success); }
+    .stat-card.purple .stat-icon { background: rgba(139,92,246,.1); color: var(--purple); }
+
+    /* ── CHARTS ROW ── */
+    .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+    }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600;
+      color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border); }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .avatar-sm {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #060F1E; flex-shrink: 0;
+    }
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-cell-name { font-size: 13px; font-weight: 600; color: var(--text1); }
+    .user-cell-sub { font-size: 11px; color: var(--text2); }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge.success { background: rgba(34,197,94,.12); color: var(--success); }
+    .badge.error   { background: rgba(239,68,68,.12);  color: var(--error); }
+    .badge.warning { background: rgba(245,158,11,.12); color: var(--warning); }
+    .badge.info    { background: rgba(59,130,246,.12); color: var(--info); }
+    .badge.purple  { background: rgba(139,92,246,.12); color: var(--purple); }
+    .badge.muted   { background: rgba(123,155,180,.1); color: var(--text2); }
+
+    /* ── ACTION BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px; font-size: 12px;
+      font-weight: 600; cursor: pointer; border: none; transition: .15s;
+    }
+    .btn-primary { background: var(--accent); color: #060F1E; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text1); border-color: var(--accent); }
+    .btn-danger { background: rgba(239,68,68,.12); color: var(--error); border: 1px solid rgba(239,68,68,.2); }
+    .btn-danger:hover { background: rgba(239,68,68,.2); }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn .material-icons-round { font-size: 14px; }
+
+    /* ── FILTERS / TABS ── */
+    .filters-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .tab-pills { display: flex; background: var(--surface2); border-radius: 10px; padding: 4px; gap: 2px; }
+    .tab-pill {
+      padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 500;
+      color: var(--text2); cursor: pointer; transition: .15s;
+    }
+    .tab-pill.active { background: var(--surface); color: var(--text1); }
+    .filter-input {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 12px;
+    }
+    .filter-input input, .filter-input select {
+      background: none; border: none; outline: none;
+      color: var(--text1); font-size: 12px; font-family: inherit;
+    }
+    .filter-input select option { background: var(--surface2); }
+
+    /* ── PAGINATION ── */
+    .pagination { display: flex; align-items: center; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+    .page-btn {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text2); display: flex;
+      align-items: center; justify-content: center; cursor: pointer; font-size: 12px;
+    }
+    .page-btn.active { background: var(--accent); color: #060F1E; border-color: var(--accent); }
+    .page-btn:hover:not(.active) { border-color: var(--accent); color: var(--text1); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(6,15,30,.85);
+      display: none; align-items: center; justify-content: center; z-index: 200;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px; width: 480px; max-width: 94vw;
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close { cursor: pointer; color: var(--text2); }
+    .modal-close:hover { color: var(--text1); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%; padding: 10px 14px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text1); font-size: 13px; font-family: inherit; outline: none;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+    /* ── AI SECTION ── */
+    .ai-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ai-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    }
+    .ai-card-icon { font-size: 28px; margin-bottom: 12px; }
+    .ai-card-title { font-size: 13px; font-weight: 700; color: var(--text1); margin-bottom: 4px; }
+    .ai-card-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2,1fr); } .charts-row { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .main { margin-left: 0; }
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 20px; font-size: 13px;
+      color: var(--text1); z-index: 300; display: flex; align-items: center; gap: 10px;
+      transform: translateY(20px); opacity: 0; transition: .3s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: var(--success); }
+    .toast.error   { border-color: var(--error); }
+
+    /* empty state */
+    .empty-state { text-align: center; padding: 48px; color: var(--text2); }
+    .empty-state .material-icons-round { font-size: 48px; color: var(--text3); margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">₣IA</div>
+    <div class="logo-text">Flouc<span>IA</span></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Principal</div>
+    <a class="nav-item active" data-page="dashboard">
+      <span class="material-icons-round">dashboard</span> Tableau de bord
+    </a>
+    <a class="nav-item" data-page="users">
+      <span class="material-icons-round">people</span> Utilisateurs
+    </a>
+    <a class="nav-item" data-page="transactions">
+      <span class="material-icons-round">receipt_long</span> Transactions
+    </a>
+    <div class="nav-section">Intelligence IA</div>
+    <a class="nav-item" data-page="ai">
+      <span class="material-icons-round">auto_awesome</span> FloucIA Analytics
+    </a>
+    <div class="nav-section">Administration</div>
+    <a class="nav-item" data-page="kyc">
+      <span class="material-icons-round">verified_user</span> Vérification KYC
+    </a>
+    <a class="nav-item" data-page="settings">
+      <span class="material-icons-round">settings</span> Paramètres
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-badge">
+      <div class="admin-avatar">AD</div>
+      <div class="admin-info">
+        <div class="admin-name">Administrateur</div>
+        <div class="admin-role">Super Admin</div>
+      </div>
+      <span class="material-icons-round" style="font-size:16px;color:var(--text3);cursor:pointer" onclick="logout()">logout</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="page-title" id="pageTitle">Tableau de bord</div>
+      <div class="page-sub" id="pageSub">Vue d'ensemble de FloucIA</div>
+    </div>
+    <div class="topbar-right">
+      <div class="search-box">
+        <span class="material-icons-round">search</span>
+        <input type="text" placeholder="Rechercher..." />
+      </div>
+      <div class="icon-btn" onclick="refreshData()">
+        <span class="material-icons-round">refresh</span>
+      </div>
+      <div class="icon-btn">
+        <span class="material-icons-round">notifications_none</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
+  <div class="page-content active" id="page-dashboard">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card teal">
+        <div class="stat-icon"><span class="material-icons-round">people</span></div>
+        <div class="stat-label">Utilisateurs total</div>
+        <div class="stat-value" id="st-users">—</div>
+        <div class="stat-delta up"><span class="material-icons-round" style="font-size:13px">trending_up</span><span id="st-users-new">—</span> ce mois</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon"><span class="material-icons-round">receipt</span></div>
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value" id="st-tx">—</div>
+        <div class="stat-delta up"><span class="material-icons-round" style="font-size:13px">trending_up</span><span id="st-tx-month">—</span> ce mois</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon"><span class="material-icons-round">account_balance_wallet</span></div>
+        <div class="stat-label">Volume mensuel</div>
+        <div class="stat-value" id="st-volume">—</div>
+        <div class="stat-delta up"><span class="material-icons-round" style="font-size:13px">payments</span>Commissions: <span id="st-fees">—</span></div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-icon"><span class="material-icons-round">pending</span></div>
+        <div class="stat-label">KYC en attente</div>
+        <div class="stat-value" id="st-kyc">—</div>
+        <div class="stat-delta warning"><span class="material-icons-round" style="font-size:13px">warning</span><span id="st-blocked">—</span> bloqués</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Croissance des utilisateurs</div>
+            <div class="card-sub">6 derniers mois</div>
+          </div>
+          <span class="badge success">+12%</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartUsers"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Types de transactions</div>
+            <div class="card-sub">Ce mois</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartTxTypes"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Transactions récentes</div>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('transactions')">
+          <span class="material-icons-round">open_in_new</span> Voir tout
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th><th>Expéditeur</th><th>Type</th>
+              <th>Montant</th><th>Statut</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="recent-tx-tbody">
+            <tr><td colspan="6" class="empty-state"><span class="material-icons-round">hourglass_empty</span><br>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE: USERS ═══════════════ -->
+  <div class="page-content" id="page-users">
+    <div class="filters-row">
+      <div class="tab-pills">
+        <div class="tab-pill active" onclick="filterUsers('all', this)">Tous</div>
+        <div class="tab-pill" onclick="filterUsers('active', this)">Actifs</div>
+        <div class="tab-pill" onclick="filterUsers('blocked', this)">Bloqués</div>
+      </div>
+      <div class="filter-input">
+        <span class="material-icons-round" style="font-size:16px;color:var(--text2)">search</span>
+        <input type="text" id="userSearch" placeholder="Nom, email, téléphone..." oninput="debounceSearch()" />
+      </div>
+      <div class="filter-input">
+        <select id="kycFilter" onchange="fetchUsers()">
+          <option value="">KYC: Tous</option>
+          <option value="pending">En attente</option>
+          <option value="verified">Vérifié</option>
+          <option value="rejected">Rejeté</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="exportCSV()">
+        <span class="material-icons-round">download</span> Export CSV
+      </button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th><th>Téléphone</th><th>Solde</th>
+              <th>KYC</th><th>Statut</th><th>Inscrit le</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="7" class="empty-state"><span class="material-icons-round">hourglass_empty</span><br>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="users-pagination"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE: TRANSACTIONS ═══════════════ -->
+  <div class="page-content" id="page-transactions">
+    <div class="filters-row">
+      <div class="filter-input">
+        <span class="material-icons-round" style="font-size:16px;color:var(--text2)">tag</span>
+        <input type="text" id="txSearch" placeholder="Référence..." />
+      </div>
+      <div class="filter-input">
+        <select id="txTypeFilter" onchange="fetchTransactions()">
+          <option value="">Type: Tous</option>
+          <option value="send">Envoi</option>
+          <option value="topup">Alimentation</option>
+          <option value="bill_payment">Facture</option>
+          <option value="recharge_phone">Recharge</option>
+          <option value="withdrawal">Retrait</option>
+          <option value="savings_deposit">Épargne</option>
+        </select>
+      </div>
+      <div class="filter-input">
+        <select id="txStatusFilter" onchange="fetchTransactions()">
+          <option value="">Statut: Tous</option>
+          <option value="completed">Complété</option>
+          <option value="pending">En attente</option>
+          <option value="failed">Échoué</option>
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="fetchTransactions()">
+        <span class="material-icons-round">filter_list</span> Filtrer
+      </button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th><th>Expéditeur</th><th>Destinataire</th>
+              <th>Type</th><th>Montant</th><th>Frais</th><th>Statut</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="tx-tbody">
+            <tr><td colspan="8" class="empty-state"><span class="material-icons-round">hourglass_empty</span><br>Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="tx-pagination"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE: AI ═══════════════ -->
+  <div class="page-content" id="page-ai">
+    <div class="ai-cards">
+      <div class="ai-card">
+        <div class="ai-card-icon">🤖</div>
+        <div class="ai-card-title">Claude AI Intégré</div>
+        <div class="ai-card-desc">Conseiller financier alimenté par Claude claude-sonnet-4-20250514 avec analyse contextuelle du profil utilisateur.</div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-icon">📊</div>
+        <div class="ai-card-title">Analyse Automatique</div>
+        <div class="ai-card-desc">Score financier, catégorisation des dépenses et recommandations personnalisées générées par IA.</div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-icon">💡</div>
+        <div class="ai-card-title">Conseils du Jour</div>
+        <div class="ai-card-desc">3 conseils financiers quotidiens adaptés au profil et historique de chaque utilisateur.</div>
+      </div>
+    </div>
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Volume de transactions mensuel</div>
+            <div class="card-sub">Évolution des 6 derniers mois (TND)</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartVolume"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Répartition par catégorie</div>
+        </div>
+        <div style="padding: 12px 0;">
+          <div id="category-list">
+            <div class="empty-state">
+              <span class="material-icons-round">donut_large</span>
+              <p>Données agrégées de l'IA</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- AI Chat test -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Test FloucIA IA</div>
+          <div class="card-sub">Testez l'assistant directement depuis l'admin</div>
+        </div>
+      </div>
+      <div id="admin-ai-chat" style="min-height:200px;max-height:300px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
+      <div style="display:flex;gap:10px;">
+        <input type="text" id="admin-ai-input" class="form-input" placeholder="Demandez une analyse à FloucIA..." style="flex:1" onkeydown="if(event.key==='Enter') adminAiSend()" />
+        <button class="btn btn-primary" onclick="adminAiSend()">
+          <span class="material-icons-round">send</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE: KYC ═══════════════ -->
+  <div class="page-content" id="page-kyc">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title">Utilisateurs en attente de vérification KYC</div>
+        <button class="btn btn-ghost btn-sm" onclick="fetchKYCUsers()">
+          <span class="material-icons-round">refresh</span> Actualiser
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Solde</th><th>Inscrit</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="kyc-tbody">
+            <tr><td colspan="6" class="empty-state">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE: SETTINGS ═══════════════ -->
+  <div class="page-content" id="page-settings">
+    <div class="card" style="max-width:560px">
+      <div class="card-title" style="margin-bottom:20px">Connexion Admin</div>
+      <div class="form-group">
+        <label class="form-label">URL de l'API Backend</label>
+        <input type="text" id="apiUrlInput" class="form-input" placeholder="http://localhost:5000/api" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Admin</label>
+        <input type="email" id="adminEmailInput" class="form-input" placeholder="admin@floucIA.tn" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" id="adminPassInput" class="form-input" placeholder="••••••••" />
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="connectAdmin()">
+          <span class="material-icons-round">login</span> Se connecter
+        </button>
+        <button class="btn btn-ghost" onclick="testConnection()">
+          <span class="material-icons-round">wifi</span> Tester la connexion
+        </button>
+      </div>
+      <div id="conn-status" style="margin-top:16px;font-size:13px;color:var(--text2)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalUserName">Détail utilisateur</div>
+      <span class="material-icons-round modal-close" onclick="closeModal()">close</span>
+    </div>
+    <div id="modal-user-content"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Fermer</button>
+      <button class="btn btn-danger" style="flex:1" id="modal-block-btn">Bloquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════ CONFIG ═══════════
+let API_BASE = localStorage.getItem('api_base') || 'http://localhost:5000/api';
+let TOKEN = localStorage.getItem('admin_token') || '';
+let currentPage = 'dashboard';
+let usersPage = 1, txPage = 1;
+let userStatusFilter = '';
+let searchTimeout = null;
+
+// ═══════════ NAV ═══════════
+const pageTitles = {
+  dashboard: ['Tableau de bord', 'Vue d\'ensemble FloucIA'],
+  users:     ['Utilisateurs', 'Gestion des comptes'],
+  transactions: ['Transactions', 'Historique complet'],
+  ai:        ['FloucIA Analytics', 'Intelligence artificielle financière'],
+  kyc:       ['Vérification KYC', 'Gestion des identités'],
+  settings:  ['Paramètres', 'Configuration admin'],
+};
+document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+  el.addEventListener('click', () => navigate(el.dataset.page));
+});
+function navigate(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  const [title, sub] = pageTitles[page] || [page, ''];
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSub').textContent = sub;
+  currentPage = page;
+  loadPage(page);
+}
+function loadPage(page) {
+  if (page === 'dashboard') { fetchStats(); fetchRecentTx(); }
+  if (page === 'users') fetchUsers();
+  if (page === 'transactions') fetchTransactions();
+  if (page === 'kyc') fetchKYCUsers();
+  if (page === 'ai') { fetchStats(); initAiCharts(); }
+  if (page === 'settings') {
+    document.getElementById('apiUrlInput').value = API_BASE;
+  }
+}
+
+// ═══════════ API ═══════════
+async function api(endpoint, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + endpoint, opts);
+  return res.json();
+}
+
+// ═══════════ STATS ═══════════
+async function fetchStats() {
+  try {
+    const data = await api('/admin/stats');
+    if (!data.success) return;
+    const s = data.stats;
+    document.getElementById('st-users').textContent = s.totalUsers.toLocaleString();
+    document.getElementById('st-users-new').textContent = '+' + s.newUsersThisMonth;
+    document.getElementById('st-tx').textContent = s.totalTransactions.toLocaleString();
+    document.getElementById('st-tx-month').textContent = '+' + s.txThisMonth;
+    document.getElementById('st-volume').textContent = (s.volumeThisMonth || 0).toFixed(3) + ' TND';
+    document.getElementById('st-fees').textContent = (s.feesThisMonth || 0).toFixed(3) + ' TND';
+    document.getElementById('st-kyc').textContent = s.pendingKYC;
+    document.getElementById('st-blocked').textContent = s.blockedUsers;
+    drawUserGrowthChart(s.userGrowth);
+    drawTxTypesChart(s.txByType);
+    drawVolumeChart(s.userGrowth); // reuse for demo
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════ CHARTS ═══════════
+let chartInstances = {};
+function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+function drawUserGrowthChart(data) {
+  destroyChart('chartUsers');
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const labels = (data || []).map(d => months[(d._id.month - 1)] + ' ' + d._id.year);
+  const values = (data || []).map(d => d.count);
+  if (!labels.length) { labels.push(...['Jan','Fév','Mar','Avr','Mai','Jun']); values.push(...[12,19,8,27,35,44]); }
+  const ctx = document.getElementById('chartUsers').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,220);
+  grad.addColorStop(0,'rgba(0,212,170,0.3)'); grad.addColorStop(1,'rgba(0,212,170,0)');
+  chartInstances['chartUsers'] = new Chart(ctx, {
+    type:'line', data:{ labels, datasets:[{ label:'Nouveaux utilisateurs', data: values,
+      borderColor:'#00D4AA', backgroundColor: grad, borderWidth:2, pointRadius:4,
+      pointBackgroundColor:'#00D4AA', fill:true, tension:0.4 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{ grid:{ color:'rgba(30,45,66,.5)' }, ticks:{ color:'#7B9BB4', font:{size:11} } },
+               y:{ grid:{ color:'rgba(30,45,66,.5)' }, ticks:{ color:'#7B9BB4', font:{size:11} } } } }
+  });
+}
+
+function drawTxTypesChart(data) {
+  destroyChart('chartTxTypes');
+  const typeLabels = { send:'Envoi', topup:'Alimentation', bill_payment:'Factures',
+    recharge_phone:'Recharge', withdrawal:'Retrait', savings_deposit:'Épargne', qr_payment:'QR Pay' };
+  const colors = ['#00D4AA','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#22C55E','#F97316'];
+  const items = (data || []).slice(0,7);
+  if (!items.length) {
+    items.push(
+      {_id:'send',count:45},{_id:'topup',count:30},{_id:'bill_payment',count:15},
+      {_id:'recharge_phone',count:10},{_id:'savings_deposit',count:8}
+    );
+  }
+  const ctx = document.getElementById('chartTxTypes').getContext('2d');
+  chartInstances['chartTxTypes'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels: items.map(i => typeLabels[i._id] || i._id),
+           datasets:[{ data: items.map(i => i.count || i.volume || 0),
+             backgroundColor: colors, borderWidth:0, hoverOffset:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#7B9BB4', font:{size:11}, padding:10 } } } }
+  });
+}
+
+function drawVolumeChart(data) {
+  const ctx = document.getElementById('chartVolume');
+  if (!ctx) return;
+  destroyChart('chartVolume');
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun'];
+  const vals = [1200,1850,980,2400,3100,4200];
+  chartInstances['chartVolume'] = new Chart(ctx.getContext('2d'), {
+    type:'bar',
+    data:{ labels: months, datasets:[{ label:'Volume (TND)', data: vals,
+      backgroundColor: 'rgba(0,212,170,0.2)', borderColor:'#00D4AA',
+      borderWidth:2, borderRadius:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{ grid:{ display:false }, ticks:{ color:'#7B9BB4', font:{size:11} } },
+               y:{ grid:{ color:'rgba(30,45,66,.5)' }, ticks:{ color:'#7B9BB4', font:{size:11} } } } }
+  });
+}
+
+function initAiCharts() { fetchStats(); }
+
+// ═══════════ RECENT TX ═══════════
+async function fetchRecentTx() {
+  try {
+    const data = await api('/admin/transactions?limit=8');
+    if (!data.success) return;
+    const tbody = document.getElementById('recent-tx-tbody');
+    if (!data.transactions.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Aucune transaction</td></tr>'; return; }
+    tbody.innerHTML = data.transactions.map(tx => `
+      <tr>
+        <td><span style="font-family:monospace;font-size:11px;color:var(--accent)">${tx.reference?.substring(0,14) || '—'}</span></td>
+        <td><div class="user-cell">
+          <div class="avatar-sm">${(tx.sender?.firstName?.[0] || '?')}${(tx.sender?.lastName?.[0] || '')}</div>
+          <div><div class="user-cell-name">${tx.sender?.firstName || '—'} ${tx.sender?.lastName || ''}</div>
+          <div class="user-cell-sub">${tx.sender?.phone || ''}</div></div></div></td>
+        <td>${typeBadge(tx.type)}</td>
+        <td><strong>${(tx.amount||0).toFixed(3)} TND</strong></td>
+        <td>${statusBadge(tx.status)}</td>
+        <td style="color:var(--text3);font-size:12px">${fmtDate(tx.createdAt)}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+// ═══════════ USERS ═══════════
+async function fetchUsers() {
+  const search = document.getElementById('userSearch')?.value || '';
+  const kyc = document.getElementById('kycFilter')?.value || '';
+  try {
+    const data = await api(`/admin/users?page=${usersPage}&limit=15&search=${search}&status=${userStatusFilter}&kycStatus=${kyc}`);
+    if (!data.success) return;
+    const tbody = document.getElementById('users-tbody');
+    if (!data.users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Aucun utilisateur</td></tr>'; return; }
+    tbody.innerHTML = data.users.map(u => `
+      <tr>
+        <td><div class="user-cell">
+          <div class="avatar-sm">${(u.firstName?.[0]||'?')}${(u.lastName?.[0]||'')}</div>
+          <div><div class="user-cell-name">${u.firstName} ${u.lastName}</div>
+          <div class="user-cell-sub">${u.email}</div></div></div></td>
+        <td>${u.phone}</td>
+        <td><strong>${(u.wallet?.balance||0).toFixed(3)} TND</strong></td>
+        <td>${kycBadge(u.kycStatus)}</td>
+        <td>${u.isBlocked ? '<span class="badge error">Bloqué</span>' : '<span class="badge success">Actif</span>'}</td>
+        <td style="color:var(--text3);font-size:12px">${fmtDate(u.createdAt)}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="showUserModal('${u._id}','${u.firstName} ${u.lastName}','${u.isBlocked}','${u.kycStatus}')">
+            <span class="material-icons-round">visibility</span>
+          </button>
+          <button class="btn ${u.isBlocked?'btn-primary':'btn-danger'} btn-sm" onclick="toggleBlock('${u._id}',this)">
+            ${u.isBlocked ? 'Débloquer' : 'Bloquer'}
+          </button>
+        </td>
+      </tr>`).join('');
+    renderPagination('users-pagination', data.pages, usersPage, (p) => { usersPage = p; fetchUsers(); });
+  } catch(e) { console.error(e); }
+}
+
+function filterUsers(status, el) {
+  document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  userStatusFilter = status === 'all' ? '' : status;
+  usersPage = 1; fetchUsers();
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(fetchUsers, 400);
+}
+
+async function toggleBlock(userId, btn) {
+  try {
+    const data = await api(`/admin/users/${userId}/block`, 'PUT');
+    if (data.success) { showToast(data.message, 'success'); fetchUsers(); }
+  } catch(e) {}
+}
+
+function showUserModal(id, name, isBlocked, kyc) {
+  document.getElementById('modalUserName').textContent = name;
+  document.getElementById('userModal').classList.add('open');
+  document.getElementById('modal-user-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--text2)">Statut compte</div>
+        <div style="margin-top:6px">${isBlocked === 'true' ? '<span class="badge error">Bloqué</span>' : '<span class="badge success">Actif</span>'}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--text2)">KYC</div>
+        <div style="margin-top:6px">${kycBadge(kyc)}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="form-label">Mettre à jour KYC</label>
+      <select class="form-input" id="kycSelectModal">
+        <option value="pending" ${kyc==='pending'?'selected':''}>En attente</option>
+        <option value="verified" ${kyc==='verified'?'selected':''}>Vérifié</option>
+        <option value="rejected" ${kyc==='rejected'?'selected':''}>Rejeté</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="updateKYC('${id}')">Mettre à jour KYC</button>`;
+  document.getElementById('modal-block-btn').textContent = isBlocked === 'true' ? 'Débloquer' : 'Bloquer';
+  document.getElementById('modal-block-btn').onclick = () => { toggleBlock(id, null); closeModal(); };
+}
+
+async function updateKYC(userId) {
+  const kycStatus = document.getElementById('kycSelectModal').value;
+  const data = await api(`/admin/users/${userId}/kyc`, 'PUT', { kycStatus });
+  if (data.success) { showToast('KYC mis à jour', 'success'); closeModal(); fetchUsers(); }
+}
+function closeModal() { document.getElementById('userModal').classList.remove('open'); }
+
+// ═══════════ TRANSACTIONS ═══════════
+async function fetchTransactions() {
+  const type = document.getElementById('txTypeFilter')?.value || '';
+  const status = document.getElementById('txStatusFilter')?.value || '';
+  const search = document.getElementById('txSearch')?.value || '';
+  try {
+    const data = await api(`/admin/transactions?page=${txPage}&limit=15&type=${type}&status=${status}&search=${search}`);
+    if (!data.success) return;
+    const tbody = document.getElementById('tx-tbody');
+    if (!data.transactions.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Aucune transaction</td></tr>'; return; }
+    tbody.innerHTML = data.transactions.map(tx => `
+      <tr>
+        <td><span style="font-family:monospace;font-size:11px;color:var(--accent)">${tx.reference?.substring(0,14)||'—'}</span></td>
+        <td>${tx.sender ? `<span style="font-size:12px">${tx.sender.firstName} ${tx.sender.lastName}</span>` : '—'}</td>
+        <td>${tx.receiver ? `<span style="font-size:12px">${tx.receiver.firstName} ${tx.receiver.lastName}</span>` : '—'}</td>
+        <td>${typeBadge(tx.type)}</td>
+        <td><strong>${(tx.amount||0).toFixed(3)} TND</strong></td>
+        <td style="color:var(--text3)">${(tx.fees||0).toFixed(3)}</td>
+        <td>${statusBadge(tx.status)}</td>
+        <td style="color:var(--text3);font-size:11px">${fmtDate(tx.createdAt)}</td>
+      </tr>`).join('');
+    renderPagination('tx-pagination', data.pages, txPage, (p) => { txPage = p; fetchTransactions(); });
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════ KYC ═══════════
+async function fetchKYCUsers() {
+  try {
+    const data = await api('/admin/users?kycStatus=pending&limit=50');
+    if (!data.success) return;
+    const tbody = document.getElementById('kyc-tbody');
+    if (!data.users.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Aucun KYC en attente 🎉</td></tr>'; return; }
+    tbody.innerHTML = data.users.map(u => `
+      <tr>
+        <td><div class="user-cell">
+          <div class="avatar-sm">${u.firstName[0]}${u.lastName[0]}</div>
+          <div class="user-cell-name">${u.firstName} ${u.lastName}</div></div></td>
+        <td>${u.email}</td>
+        <td>${u.phone}</td>
+        <td>${(u.wallet?.balance||0).toFixed(3)} TND</td>
+        <td style="font-size:11px;color:var(--text3)">${fmtDate(u.createdAt)}</td>
+        <td>
+          <button class="btn btn-primary btn-sm" onclick="quickKYC('${u._id}','verified')">✓ Approuver</button>
+          <button class="btn btn-danger btn-sm" onclick="quickKYC('${u._id}','rejected')">✗ Rejeter</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+async function quickKYC(userId, kycStatus) {
+  const data = await api(`/admin/users/${userId}/kyc`, 'PUT', { kycStatus });
+  if (data.success) { showToast(`KYC ${kycStatus === 'verified' ? 'approuvé' : 'rejeté'}`, 'success'); fetchKYCUsers(); fetchStats(); }
+}
+
+// ═══════════ ADMIN LOGIN ═══════════
+async function connectAdmin() {
+  const url   = document.getElementById('apiUrlInput').value.trim();
+  const email = document.getElementById('adminEmailInput').value.trim();
+  const pass  = document.getElementById('adminPassInput').value;
+  if (!url || !email || !pass) { showToast('Remplissez tous les champs', 'error'); return; }
+  API_BASE = url;
+  try {
+    const data = await fetch(url + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    }).then(r => r.json());
+    if (data.success && data.user.role === 'admin') {
+      TOKEN = data.token;
+      localStorage.setItem('admin_token', TOKEN);
+      localStorage.setItem('api_base', API_BASE);
+      document.getElementById('conn-status').innerHTML = '<span style="color:var(--success)">✓ Connecté en tant qu\'administrateur</span>';
+      showToast('Connexion réussie !', 'success');
+      navigate('dashboard');
+    } else {
+      document.getElementById('conn-status').innerHTML = '<span style="color:var(--error)">✗ ' + (data.message || 'Accès refusé') + '</span>';
+    }
+  } catch(e) {
+    document.getElementById('conn-status').innerHTML = '<span style="color:var(--error)">✗ Impossible de joindre le serveur</span>';
+  }
+}
+
+async function testConnection() {
+  const url = document.getElementById('apiUrlInput').value.trim();
+  try {
+    const data = await fetch(url.replace('/api','') + '/health').then(r => r.json());
+    document.getElementById('conn-status').innerHTML = `<span style="color:var(--success)">✓ ${data.status || 'Serveur en ligne'}</span>`;
+  } catch(e) {
+    document.getElementById('conn-status').innerHTML = '<span style="color:var(--error)">✗ Serveur inaccessible</span>';
+  }
+}
+
+// ═══════════ ADMIN AI CHAT ═══════════
+async function adminAiSend() {
+  const input = document.getElementById('admin-ai-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  const chat = document.getElementById('admin-ai-chat');
+  chat.innerHTML += `<div style="align-self:flex-end;background:var(--accent);color:#060F1E;padding:10px 14px;border-radius:14px 14px 4px 14px;font-size:13px;max-width:80%">${msg}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+  try {
+    const data = await api('/ai/chat', 'POST', { message: msg });
+    chat.innerHTML += `<div style="align-self:flex-start;background:var(--surface2);border:1px solid var(--border);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px;max-width:80%;line-height:1.5">${data.reply || 'Erreur IA'}</div>`;
+  } catch(e) {
+    chat.innerHTML += `<div style="align-self:flex-start;color:var(--error);font-size:12px">Erreur: ${e.message}</div>`;
+  }
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ═══════════ HELPERS ═══════════
+function renderPagination(containerId, pages, current, cb) {
+  const el = document.getElementById(containerId);
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  let html = '';
+  for (let i = 1; i <= pages; i++) {
+    html += `<div class="page-btn ${i===current?'active':''}" onclick="(${cb.toString()})(${i})">${i}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function typeBadge(type) {
+  const map = {
+    send: ['Envoi', 'error'], receive: ['Reçu', 'success'],
+    topup: ['Alimentation', 'info'], bill_payment: ['Facture', 'warning'],
+    recharge_phone: ['Recharge', 'purple'], withdrawal: ['Retrait', 'error'],
+    savings_deposit: ['Épargne', 'info'], qr_payment: ['QR Pay', 'success'],
+  };
+  const [label, cls] = map[type] || [type, 'muted'];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function statusBadge(s) {
+  const map = { completed: 'success', pending: 'warning', failed: 'error', cancelled: 'muted' };
+  const labels = { completed: 'Complété', pending: 'En attente', failed: 'Échoué', cancelled: 'Annulé' };
+  return `<span class="badge ${map[s]||'muted'}">${labels[s]||s}</span>`;
+}
+
+function kycBadge(s) {
+  const map = { verified: ['Vérifié','success'], pending: ['En attente','warning'], rejected: ['Rejeté','error'] };
+  const [label, cls] = map[s] || [s, 'muted'];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  const icons = { success: '✓', error: '✗', info: 'ℹ' };
+  t.textContent = (icons[type]||'') + ' ' + msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function refreshData() { loadPage(currentPage); showToast('Données actualisées', 'success'); }
+function logout() { localStorage.clear(); showToast('Déconnecté', 'info'); TOKEN = ''; navigate('settings'); }
+
+function exportCSV() {
+  showToast('Export CSV en cours...', 'info');
+}
+
+// ═══════════ INIT ═══════════
+window.addEventListener('load', () => {
+  if (TOKEN) { fetchStats(); fetchRecentTx(); }
+  else { navigate('settings'); }
+});
+</script>
+</body>
+</html>
+<!-- ═══ PATCH: Merchants + Taxes pages added via JS after DOM ═══ -->
+<script>
+// ── Add nav items ──────────────────────────────────────────────────────────
+document.querySelector('.sidebar-nav').innerHTML += `
+  <div class="nav-section">Marketplace</div>
+  <a class="nav-item" data-page="merchants">
+    <span class="material-icons-round">storefront</span> Marchands
+  </a>
+  <a class="nav-item" data-page="taxes">
+    <span class="material-icons-round">account_balance</span> Taxes & Services
+  </a>`;
+
+// Re-bind nav items (includes new ones)
+document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+  el.addEventListener('click', () => navigate(el.dataset.page));
+});
+
+// ── Add pages HTML ─────────────────────────────────────────────────────────
+const pagesEl = document.querySelector('.main');
+
+pagesEl.insertAdjacentHTML('beforeend', `
+<!-- PAGE: MERCHANTS -->
+<div class="page-content" id="page-merchants">
+  <div class="filters-row">
+    <div class="filter-input">
+      <span class="material-icons-round" style="font-size:16px;color:var(--text2)">search</span>
+      <input type="text" id="merchantSearch" placeholder="Nom, ville..." oninput="debMerchant()" />
+    </div>
+    <div class="filter-input">
+      <select id="merchantCatFilter" onchange="fetchMerchants()">
+        <option value="">Catégorie: Toutes</option>
+        <option value="restaurant">Restaurant</option>
+        <option value="magasin">Magasin</option>
+        <option value="hanout">Hanout</option>
+        <option value="pharmacie">Pharmacie</option>
+        <option value="supermarche">Supermarché</option>
+        <option value="cafe">Café</option>
+        <option value="electronique">Électronique</option>
+        <option value="vetements">Vêtements</option>
+        <option value="services">Services</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddMerchant()">
+      <span class="material-icons-round">add</span> Ajouter marchand
+    </button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Marchand</th><th>Catégorie</th><th>Ville</th><th>Note</th><th>Statut</th><th>Inscrit</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="merchants-tbody">
+          <tr><td colspan="7" class="empty-state"><span class="material-icons-round">hourglass_empty</span><br>Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination" id="merchants-pagination"></div>
+  </div>
+</div>
+
+<!-- PAGE: TAXES -->
+<div class="page-content" id="page-taxes">
+  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="stat-card teal"><div class="stat-icon"><span>🚗</span></div><div class="stat-label">Vignettes</div><div class="stat-value" id="tx-vignette">—</div></div>
+    <div class="stat-card blue"><div class="stat-icon"><span>🏠</span></div><div class="stat-label">Foncières</div><div class="stat-value" id="tx-fonciere">—</div></div>
+    <div class="stat-card green"><div class="stat-icon"><span>📋</span></div><div class="stat-label">Amendes</div><div class="stat-value" id="tx-amende">—</div></div>
+    <div class="stat-card purple"><div class="stat-icon"><span>🎓</span></div><div class="stat-label">Universités</div><div class="stat-value" id="tx-univ">—</div></div>
+    <div class="stat-card teal"><div class="stat-icon"><span>🏥</span></div><div class="stat-label">CNAM</div><div class="stat-value" id="tx-cnam">—</div></div>
+  </div>
+  <div class="filters-row">
+    <div class="filter-input">
+      <select id="taxTypeFilter" onchange="fetchTaxes()">
+        <option value="">Type: Tous</option>
+        <option value="vignette">Vignette auto</option>
+        <option value="taxe_fonciere">Taxe foncière</option>
+        <option value="amende">Amende routière</option>
+        <option value="frais_univ">Frais universitaires</option>
+        <option value="cnam">CNAM</option>
+      </select>
+    </div>
+    <div class="filter-input">
+      <select id="taxStatusFilter" onchange="fetchTaxes()">
+        <option value="">Statut: Tous</option>
+        <option value="completed">Complété</option>
+        <option value="pending">En attente</option>
+        <option value="failed">Échoué</option>
+      </select>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Référence</th><th>Utilisateur</th><th>Type</th><th>Détail</th><th>Montant</th><th>Statut</th><th>Date</th></tr>
+        </thead>
+        <tbody id="taxes-tbody">
+          <tr><td colspan="7" class="empty-state"><span class="material-icons-round">hourglass_empty</span><br>Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination" id="taxes-pagination"></div>
+  </div>
+</div>
+
+<!-- ADD MERCHANT MODAL -->
+<div class="modal-overlay" id="merchantModal">
+  <div class="modal" style="width:560px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title">Ajouter un marchand</div>
+      <span class="material-icons-round modal-close" onclick="closeMerchantModal()">close</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label class="form-label">Nom (FR)</label><input class="form-input" id="m-name" placeholder="Nom du commerce" /></div>
+      <div class="form-group"><label class="form-label">الاسم (AR)</label><input class="form-input" id="m-nameAr" placeholder="اسم المحل" dir="rtl" /></div>
+      <div class="form-group"><label class="form-label">Catégorie</label>
+        <select class="form-input" id="m-category">
+          <option value="restaurant">Restaurant</option><option value="magasin">Magasin</option>
+          <option value="hanout">Hanout</option><option value="pharmacie">Pharmacie</option>
+          <option value="supermarche">Supermarché</option><option value="cafe">Café</option>
+          <option value="electronique">Électronique</option><option value="vetements">Vêtements</option>
+          <option value="services">Services</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Téléphone</label><input class="form-input" id="m-phone" placeholder="+216 XX XXX XXX" /></div>
+      <div class="form-group"><label class="form-label">Ville</label><input class="form-input" id="m-ville" placeholder="Tunis" /></div>
+      <div class="form-group"><label class="form-label">Gouvernorat</label><input class="form-input" id="m-gouv" placeholder="Tunis" /></div>
+      <div class="form-group"><label class="form-label">Latitude</label><input class="form-input" id="m-lat" placeholder="36.8065" /></div>
+      <div class="form-group"><label class="form-label">Longitude</label><input class="form-input" id="m-lng" placeholder="10.1815" /></div>
+    </div>
+    <div class="form-group"><label class="form-label">Adresse</label><input class="form-input" id="m-address" placeholder="Adresse complète" /></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="m-desc" rows="2" placeholder="Description du commerce"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px">
+        <input type="checkbox" id="m-verified" /> Marchand vérifié
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px">
+        <input type="checkbox" id="m-featured" /> À la une
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px">
+        <input type="checkbox" id="m-accepts" checked /> Accepte FloucIA
+      </label>
+    </div>
+    <div class="form-actions" style="margin-top:20px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeMerchantModal()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveMerchant()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+`);
+
+// ── Page titles ────────────────────────────────────────────────────────────
+Object.assign(pageTitles, {
+  merchants: ['Marchands', 'Gestion de la marketplace'],
+  taxes:     ['Taxes & Services', 'Paiements gouvernementaux'],
+});
+
+// ── Merchants logic ────────────────────────────────────────────────────────
+let merchantsPage = 1, merchantTimeout = null;
+function debMerchant() { clearTimeout(merchantTimeout); merchantTimeout = setTimeout(fetchMerchants, 400); }
+function closeMerchantModal() { document.getElementById('merchantModal').classList.remove('open'); }
+function openAddMerchant() { document.getElementById('merchantModal').classList.add('open'); }
+
+async function fetchMerchants() {
+  const search  = document.getElementById('merchantSearch')?.value || '';
+  const category= document.getElementById('merchantCatFilter')?.value || '';
+  try {
+    const data = await api(`/merchants/admin/all?page=${merchantsPage}&limit=15&search=${search}&category=${category}`);
+    if (!data.success) return;
+    const tbody = document.getElementById('merchants-tbody');
+    if (!data.merchants.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Aucun marchand</td></tr>'; return;
+    }
+    tbody.innerHTML = data.merchants.map(m => `
+      <tr>
+        <td><div class="user-cell">
+          <div class="avatar-sm" style="background:linear-gradient(135deg,#00D4AA,#00896C)">${m.name?.[0]||'?'}</div>
+          <div><div class="user-cell-name">${m.name}</div>
+          <div class="user-cell-sub">${m.nameAr || ''}</div></div></div></td>
+        <td>${catBadge(m.category)}</td>
+        <td>${m.ville || '—'}</td>
+        <td>${m.rating > 0 ? '⭐ ' + m.rating.toFixed(1) : '—'}</td>
+        <td>
+          ${m.isVerified ? '<span class="badge success">Vérifié</span>' : '<span class="badge muted">Non vérifié</span>'}
+          ${m.isFeatured ? '<span class="badge info">À la une</span>' : ''}
+          ${!m.isActive ? '<span class="badge error">Inactif</span>' : ''}
+        </td>
+        <td style="font-size:11px;color:var(--text3)">${fmtDate(m.createdAt)}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="toggleMerchantFeatured('${m._id}',${m.isFeatured})">
+            ${m.isFeatured ? '★ Retirer' : '☆ Mettre en avant'}
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMerchant('${m._id}')">Désactiver</button>
+        </td>
+      </tr>`).join('');
+    renderPagination('merchants-pagination', data.pages, merchantsPage, (p) => { merchantsPage = p; fetchMerchants(); });
+  } catch(e) { console.error(e); }
+}
+
+async function saveMerchant() {
+  const body = {
+    name:           document.getElementById('m-name').value,
+    nameAr:         document.getElementById('m-nameAr').value,
+    category:       document.getElementById('m-category').value,
+    phone:          document.getElementById('m-phone').value,
+    ville:          document.getElementById('m-ville').value,
+    gouvernorat:    document.getElementById('m-gouv').value,
+    address:        document.getElementById('m-address').value,
+    description:    document.getElementById('m-desc').value,
+    lat:            document.getElementById('m-lat').value,
+    lng:            document.getElementById('m-lng').value,
+    isVerified:     document.getElementById('m-verified').checked,
+    isFeatured:     document.getElementById('m-featured').checked,
+    acceptsFloucIA: document.getElementById('m-accepts').checked,
+  };
+  const data = await api('/merchants/', 'POST', body);
+  if (data.success) { showToast('Marchand ajouté !', 'success'); closeMerchantModal(); fetchMerchants(); }
+  else showToast(data.message || 'Erreur', 'error');
+}
+
+async function toggleMerchantFeatured(id, current) {
+  const data = await api(`/merchants/${id}`, 'PUT', { isFeatured: !current });
+  if (data.success) { showToast('Mis à jour', 'success'); fetchMerchants(); }
+}
+
+async function deleteMerchant(id) {
+  if (!confirm('Désactiver ce marchand ?')) return;
+  const data = await api(`/merchants/${id}`, 'DELETE');
+  if (data.success) { showToast('Marchand désactivé', 'success'); fetchMerchants(); }
+}
+
+function catBadge(cat) {
+  const map = {
+    restaurant:'info', magasin:'success', hanout:'warning',
+    pharmacie:'success', supermarche:'info', cafe:'muted',
+    electronique:'purple', vetements:'info', services:'muted',
+  };
+  const labels = {
+    restaurant:'Restaurant', magasin:'Magasin', hanout:'Hanout',
+    pharmacie:'Pharmacie', supermarche:'Supermarché', cafe:'Café',
+    electronique:'Électronique', vetements:'Vêtements', services:'Services',
+  };
+  return `<span class="badge ${map[cat]||'muted'}">${labels[cat]||cat}</span>`;
+}
+
+// ── Taxes logic ────────────────────────────────────────────────────────────
+let taxPage = 1;
+async function fetchTaxes() {
+  const type   = document.getElementById('taxTypeFilter')?.value   || '';
+  const status = document.getElementById('taxStatusFilter')?.value || '';
+  try {
+    const data = await api(`/taxes/admin/all?page=${taxPage}&limit=15&taxType=${type}&status=${status}`);
+    if (!data.success) return;
+    // Volume stats
+    if (data.volume) {
+      const totals = {};
+      data.volume.forEach(v => totals[v._id] = v);
+      ['vignette','taxe_fonciere','amende','frais_univ','cnam'].forEach(t => {
+        const el = document.getElementById(`tx-${t.replace('taxe_','').replace('frais_','')}`);
+        if (el) el.textContent = (totals[t]?.total || 0).toFixed(3) + ' TND';
+      });
+    }
+    const tbody = document.getElementById('taxes-tbody');
+    if (!data.taxes.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Aucun paiement fiscal</td></tr>'; return; }
+    tbody.innerHTML = data.taxes.map(t => {
+      const detail = getTaxDetail(t);
+      return `<tr>
+        <td><span style="font-family:monospace;font-size:11px;color:var(--accent)">${t.reference?.substring(0,14)||'—'}</span></td>
+        <td>${t.user ? `<span style="font-size:12px">${t.user.firstName} ${t.user.lastName}</span><br><span style="font-size:10px;color:var(--text3)">${t.user.phone}</span>` : '—'}</td>
+        <td>${taxTypeBadge(t.taxType)}</td>
+        <td style="font-size:11px;color:var(--text2);max-width:150px;overflow:hidden;text-overflow:ellipsis">${detail}</td>
+        <td><strong>${(t.amount||0).toFixed(3)} TND</strong></td>
+        <td>${statusBadge(t.status)}</td>
+        <td style="font-size:11px;color:var(--text3)">${fmtDate(t.createdAt)}</td>
+      </tr>`;
+    }).join('');
+    renderPagination('taxes-pagination', data.pages, taxPage, (p) => { taxPage = p; fetchTaxes(); });
+  } catch(e) { console.error(e); }
+}
+
+function getTaxDetail(t) {
+  if (t.vignette?.matricule)     return `🚗 ${t.vignette.matricule} (${t.vignette.typeVehicule})`;
+  if (t.fonciere?.refCadastre)   return `🏠 Réf: ${t.fonciere.refCadastre}`;
+  if (t.amende?.numPV)           return `📋 PV: ${t.amende.numPV} — ${t.amende.typeInfraction}`;
+  if (t.universite?.numeroEtudiant) return `🎓 ${t.universite.etablissement} — ${t.universite.numeroEtudiant}`;
+  if (t.cnam?.numeroCnam)        return `🏥 CNAM: ${t.cnam.numeroCnam}`;
+  return t.notes || '—';
+}
+
+function taxTypeBadge(type) {
+  const map = {vignette:'🚗 Vignette', taxe_fonciere:'🏠 Foncière', amende:'📋 Amende', frais_univ:'🎓 Université', cnam:'🏥 CNAM'};
+  const cls = {vignette:'warning', taxe_fonciere:'info', amende:'error', frais_univ:'purple', cnam:'success'};
+  return `<span class="badge ${cls[type]||'muted'}">${map[type]||type}</span>`;
+}
+
+// ── Hook into existing loadPage ────────────────────────────────────────────
+const _origLoadPage = loadPage;
+window.loadPage = function(page) {
+  if (page === 'merchants') { fetchMerchants(); return; }
+  if (page === 'taxes')     { fetchTaxes();     return; }
+  _origLoadPage(page);
+};
+</script>
